@@ -6,6 +6,8 @@ import simpledb.jdbc.embedded.EmbeddedDriver;
 import simpledb.jdbc.network.NetworkDriver;
 
 public class SimpleIJ {
+    private static final int MAX_COMMAND_LENGTH = 1024;
+
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         System.out.println("Connect> ");
@@ -15,13 +17,34 @@ public class SimpleIJ {
         try (Connection conn = d.connect(s, null);
                 Statement stmt = conn.createStatement()) {
             System.out.print("\nSQL> ");
+            String cmd = "";
             while (sc.hasNextLine()) {
                 // process one line of input
-                String cmd = sc.nextLine().trim();
+                String line = sc.nextLine().trim();
+                cmd += line;
+                cmd = cmd.trim();
+
+                if (cmd.length() > MAX_COMMAND_LENGTH) {
+                    System.out.println("Command too long");
+                    cmd = "";
+                    continue;
+                }
+
                 if (cmd.startsWith("exit")) break;
-                else if (cmd.startsWith("select")) doQuery(stmt, cmd);
+
+                if (!cmd.endsWith(";")) {
+                    cmd += " ";
+                    System.out.print("> ");
+                    System.out.flush();
+                    continue;
+                }
+
+                if (cmd.startsWith("select")) doQuery(stmt, cmd);
                 else doUpdate(stmt, cmd);
+
+                cmd = "";
                 System.out.print("\nSQL> ");
+                System.out.flush();
             }
         } catch (SQLException e) {
             e.printStackTrace();
